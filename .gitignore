@@ -1,0 +1,18 @@
+# Never commit credentials
+.env
+*.pem
+*.key
+*_token.txt
+*_key.txt
+*secret*
+credentials*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
