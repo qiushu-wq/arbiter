@@ -137,19 +137,30 @@ def detect_framework(code):
     return 'Unknown'
 
 def estimate_agent_count(code, files):
-    # Count files that look like agent definitions
+    # Count from graph node definitions (most reliable)
+    nodes = set()
+    for match in re.findall(r'add_node\([\"\'](\w+)[\"\']', code):
+        nodes.add(match)
+
+    if len(nodes) > 0:
+        return len(nodes)
+
+    # Count from class definitions
+    classes = re.findall(r'class\s+(\w*[Aa]gent)\s*[(:]', code)
+    if classes:
+        return len(set(classes))
+
+    # Fallback: count files with agent patterns, capped
     count = 0
     for fp in files:
         try:
             with open(fp, encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-            if re.search(r'(class\s+\w*[Aa]gent|def\s+\w*agent|AGENTS\.md|agent_config)', content):
+                c = f.read()
+            if re.search(r'(from langgraph|import langgraph|StateGraph|add_node)', c):
                 count += 1
         except:
             pass
-    # Also count from code patterns
-    graph_count = len(re.findall(r'add_node\([\"\'](\w+)[\"\']', code))
-    return max(count, graph_count, 1)
+    return max(min(count, 20), 1)
 
 def print_report(result):
     """输出诊断报告"""
