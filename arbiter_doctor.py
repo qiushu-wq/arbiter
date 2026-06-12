@@ -204,8 +204,8 @@ def print_report(result):
     print('  ' + sep)
     print(f'  {len(high)} high, {len(medium)} medium, {len(low)} low')
     print('')
-    print('  -> These problems are solved by Arbiter: pip install arbiter')
-    print('     github.com/your/arbiter')
+    print('  -> These problems are solved by Arbiter:')
+    print('     https://github.com/qiushu-wq/arbiter')
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

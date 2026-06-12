@@ -22,7 +22,7 @@ Arbiter solves these with a 4-layer architecture: **Context Budget → Tool Sche
 Already running agents? Find out what's broken before it breaks.
 
 ```bash
-pip install arbiter-doctor
+pip install git+https://github.com/qiushu-wq/arbiter.git
 arbiter-doctor ./my-agent-project
 ```
 
@@ -59,7 +59,7 @@ tokens = qm.request("researcher", 30000)  # Researcher gets up to 30K
 ```
 
 ```bash
-pip install arbiter-lite
+pip install arbiter-lite@git+https://github.com/qiushu-wq/arbiter.git
 ```
 
 **Lite is MIT licensed. Free forever. Use it in your commercial projects.**
