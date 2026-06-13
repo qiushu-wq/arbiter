@@ -17,7 +17,17 @@ Multi-agent is great in demos. In production, every framework hits the same wall
 
 Arbiter solves these with a 4-layer architecture: **Context Budget → Tool Scheduling → State Persistence → Audit Trail**.
 
-## Claude Skill — Install in 30 Seconds
+## Install
+
+```bash
+npx skills@latest add qiushu-wq/arbiter
+```
+
+Then type `/arbiter` in Claude Code. Or install via pip:
+
+```bash
+pip install git+https://github.com/qiushu-wq/arbiter.git
+arbiter-doctor ./my-agent-project
 
 Arbiter is compatible with Matt Pocock's skills ecosystem. Install via `skills.sh`:
 
@@ -30,33 +40,6 @@ Then type `/arbiter` in Claude Code to diagnose your multi-agent project.
 Or install manually for any coding agent — copy `skills/arbiter/SKILL.md` to your `.claude/skills/` directory.
 
 ---
-
-## Arbiter Doctor — Free Diagnostic
-
-Already running agents? Find out what's broken before it breaks.
-
-```bash
-pip install git+https://github.com/qiushu-wq/arbiter.git
-arbiter-doctor ./my-agent-project
-```
-
-Output:
-```
-Diagnosis: 5 Agents - LangGraph - 23 files
---------------------------------------------------------
-[HIGH] Context sharing: 3 agents share one StateGraph, no quota
-     -> Your researcher and writer compete for the same 128K window
-     -> ~12% of calls near context boundary, risk of overflow
-     Fix: arbiter.lite quota manager — see below
-
-[MED] Swallowed errors: agent_timeout caught and print()'d, not logged
-     -> At least 7 timeouts silently lost last week
-     Fix: Arbiter audit trail records every call status
---------------------------------------------------------
-2 high, 1 medium
-```
-
-**Doctor is free. No registration. No API key. Just run it.**
 
 ## Arbiter Lite — Free Quota Manager (MIT)
 

@@ -6,6 +6,13 @@
       "path": "skills/arbiter/SKILL.md",
       "categories": ["engineering"],
       "tags": ["multi-agent", "langgraph", "crewai", "autogen", "diagnostics", "reliability"]
+    },
+    "arbiter-doctor": {
+      "name": "arbiter-doctor",
+      "description": "Scan any multi-agent project and diagnose context contention, swallowed errors, and state conflicts. Like a linter for agent reliability.",
+      "path": "skills/arbiter/AGENT-BRIEF.md",
+      "categories": ["engineering", "productivity"],
+      "tags": ["diagnostics", "langgraph", "crewai", "audit", "reliability"]
     }
   }
 }
