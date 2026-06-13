@@ -17,6 +17,20 @@ Multi-agent is great in demos. In production, every framework hits the same wall
 
 Arbiter solves these with a 4-layer architecture: **Context Budget → Tool Scheduling → State Persistence → Audit Trail**.
 
+## Claude Skill — Install in 30 Seconds
+
+Arbiter is compatible with Matt Pocock's skills ecosystem. Install via `skills.sh`:
+
+```bash
+npx skills@latest add qiushu-wq/arbiter
+```
+
+Then type `/arbiter` in Claude Code to diagnose your multi-agent project.
+
+Or install manually for any coding agent — copy `skills/arbiter/SKILL.md` to your `.claude/skills/` directory.
+
+---
+
 ## Arbiter Doctor — Free Diagnostic
 
 Already running agents? Find out what's broken before it breaks.
