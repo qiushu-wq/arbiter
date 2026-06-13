@@ -46,3 +46,10 @@ The user invokes `/arbiter` and describes what they want. Interpret and act. Exa
 2. Scan agent definitions and their interactions
 3. Report findings with severity, location, and fix suggestion
 4. Each finding links to the relevant section of github.com/qiushu-wq/arbiter
+
+## Ecosystem
+
+Arbiter integrates with complementary projects:
+
+- **Headroom** (24K stars) — `compress(messages)` saves 60-95% tokens before LLM calls. Arbiter's `arbiter_lite.compress_context()` wraps it. `pip install headroom-ai`
+- **AgentArmor** — `@shield(circuit_threshold=4)` decorator pattern for circuit breakers. Arbiter's guard follows this API. `pip install agentarmor`
