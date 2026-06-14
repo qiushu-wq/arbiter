@@ -1,12 +1,10 @@
-# Arbiter — Multi-Agent Runtime
+# Arbiter -- Multi-Agent Runtime
 
-**Arbiter** is the missing runtime for multi-agent systems. It manages context window allocation, tool scheduling, and state persistence — so your agents don't crash when there are more than 3 of them.
+**Arbiter** is the missing runtime for multi-agent systems. It manages context window allocation, tool scheduling, and state persistence -- so your agents don't crash when there are more than 3 of them.
 
 > If LangChain/CrewAI is Express.js, Arbiter is Node.js. It doesn't tell your agents what to do. It keeps them from stepping on each other.
 
 ## Why
-
-Multi-agent is great in demos. In production, every framework hits the same walls:
 
 | Problem | Severity | What Happens |
 |---------|----------|--------------|
@@ -15,83 +13,100 @@ Multi-agent is great in demos. In production, every framework hits the same wall
 | State conflicts | High | 2 agents write `state.messages` simultaneously. Data silently lost. |
 | Token boundary crashes | Critical | Agent hits context limit mid-call. No warning, just a 400 error. |
 
-Arbiter solves these with a 4-layer architecture: **Context Budget → Tool Scheduling → State Persistence → Audit Trail**.
+Arbiter solves these with a 4-layer architecture: **Context Budget -> Tool Scheduling -> State Persistence -> Audit Trail**.
 
 ## Install
 
 ```bash
+# Claude Code skill (recommended)
 npx skills@latest add qiushu-wq/arbiter
-```
 
-Then type `/arbiter` in Claude Code. Or install via pip:
-
-```bash
+# Python tools
 pip install git+https://github.com/qiushu-wq/arbiter.git
-arbiter-doctor ./my-agent-project
-
-Arbiter is compatible with Matt Pocock's skills ecosystem. Install via `skills.sh`:
-
-```bash
-npx skills@latest add qiushu-wq/arbiter
 ```
 
-Then type `/arbiter` in Claude Code to diagnose your multi-agent project.
+## Tools (MIT, Free Forever)
 
-Or install manually for any coding agent — copy `skills/arbiter/SKILL.md` to your `.claude/skills/` directory.
+### Arbiter Doctor -- Multi-Agent Diagnostic
 
----
+Scan any multi-agent project for context contention, blind spots, and state conflicts.
 
-## Arbiter Lite — Free Quota Manager (MIT)
+```bash
+arbiter-doctor ./my-agent-project
+arbiter-doctor --self    # self-check your dev environment
+```
 
-40 lines of Python. Fixes the most common multi-agent crash: context contention.
+### Arbiter Lite -- Context Quota Manager
+
+40 lines of Python. Fixed partition + instant reclamation.
 
 ```python
 from arbiter_lite import QuotaManager
 
 qm = QuotaManager(max_tokens=128000, agent_names=["researcher", "writer", "reviewer"])
-
-# Before each agent call:
 tokens = qm.request("researcher", 30000)  # Researcher gets up to 30K
-# If writer is idle for 5min, its quota is reclaimed and given to researcher
+# Idle for 5min -> half quota reclaimed for active agents
 ```
 
-```bash
-pip install arbiter-lite@git+https://github.com/qiushu-wq/arbiter.git
+### Stability Metrics -- Health Check Framework
+
+Four hard thresholds for production multi-agent systems.
+
+```python
+from stability_metrics import record, check
+
+record(trace_id, agent, action, tokens, quota_pct, status)
+report = check(hours=24)  # -> {failure_rate, context_loss, conflicts, status}
 ```
 
-**Lite is MIT licensed. Free forever. Use it in your commercial projects.**
+## Architecture (3 Rings)
 
-## Arbiter Cloud — Managed Runtime
+```
+Ring 1 (Now):    budget + audit + status + doctor + stability
+                 + dynamic tool registry (MCP protocol)
+                 + preflight syntax/memory checker
+Ring 2 (Q3):     guard + heal + adapt + cap + drain + lock
+Ring 3 (Q4):     Studio dashboard + enterprise features
+```
+
+## What's Implemented vs Planned
+
+| Feature | Ring | Status |
+|---------|------|--------|
+| ContextBudget (fixed partition + reclaim) | 1 | Done |
+| AuditTrail (12-field recording) | 1 | Done |
+| Stability Report (4 thresholds) | 1 | Done |
+| Doctor Diagnostic Tool | 1 | Done |
+| Doctor --self mode | 1 | Done |
+| MCP Dynamic Tool Registry | 1 | Done |
+| Preflight Checker | 1 | Done |
+| Guard (circuit breaker) | 2 | Q3 2026 |
+| Heal (auto-recovery) | 2 | Q3 2026 |
+| Adapt (learn usage patterns) | 2 | Q3 2026 |
+| Cap (hard token limits) | 2 | Q3 2026 |
+| Drain (graceful shutdown) | 2 | Q3 2026 |
+| Lock (per-project state locks) | 2 | Q3 2026 |
+| Studio Dashboard | 3 | Q4 2026 |
+
+## Arbiter Cloud (Commercial, Q3 2026)
 
 When you grow from 6 agents to 60, Lite isn't enough. Cloud adds:
 
+- **Guard**: Circuit breaker -- 3 failures/10min -> auto-fuse
 - **Heal**: Auto-recovery from agent failures
 - **Adapt**: Learns usage patterns, pre-allocates quota
-- **Guard**: Circuit breaker — 3 failures in 10min → auto-fuse
 - **Cap**: Hard token limits per agent per month
 - **Drain**: Graceful agent shutdown without losing in-flight tasks
 - **Lock**: Per-project state locks to prevent write conflicts
 
-```bash
-arbiter cloud login
-arbiter cloud deploy ./AGENTS.md
-```
-
-**$99-299/month.** [Join waitlist →](https://github.com/qiushu-wq/arbiter)
-
-## Architecture
-
-```
-Ring 1 (Now):  budget + audit + status + trace + doctor
-Ring 2 (Q3):   heal + adapt + guard + cap + drain + lock
-Ring 3 (Q4):   Studio dashboard + enterprise features
-```
+**$99-299/month.** [Join waitlist](https://github.com/qiushu-wq/arbiter)
 
 ## License
 
-- `arbiter-doctor` & `arbiter-lite`: MIT
+- `arbiter-doctor`, `arbiter-lite`, `stability-metrics`: MIT -- free forever, use in commercial projects
 - Arbiter Cloud & Enterprise: Commercial
 
 ---
 
-Built with 6 years of multi-agent production scars. [Star to follow →](https://github.com/qiushu-wq/arbiter)
+Built with multi-agent production scars. First deployed on our own 66-agent company.
+[Star to follow](https://github.com/qiushu-wq/arbiter)

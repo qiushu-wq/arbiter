@@ -207,10 +207,48 @@ def print_report(result):
     print('  -> These problems are solved by Arbiter:')
     print('     https://github.com/qiushu-wq/arbiter')
 
+def check_self(project_dirs=None, min_memory_files=8):
+    home = os.path.expanduser('~')
+    findings = []
+    details = {'claude_md_ok': False, 'projects_ok': True, 'missing': []}
+    claude_md = os.path.join(home, '.claude', 'CLAUDE.md')
+    details['claude_md_ok'] = os.path.exists(claude_md)
+    dirs = project_dirs or {}
+    for name, path in dirs.items():
+        if not os.path.isdir(os.path.join(home, path)):
+            details['missing'].append(name)
+            details['projects_ok'] = False
+            findings.append({
+                'severity': 'high', 'category': 'Project Missing',
+                'description': f'Directory missing: {name}',
+                'detail': f'Expected at ~/{path}'
+            })
+    return {'status': 'healthy' if details['projects_ok'] and not findings else 'degraded',
+            'findings': findings, 'details': details}
+
+def print_self_report(result):
+    sep = '-' * 56
+    print('')
+    print('  Arbiter Self-Scan')
+    print('  ' + sep)
+    d = result['details']
+    print(f'  CLAUDE.md:    {"OK" if d["claude_md_ok"] else "MISSING"}')
+    print(f'  Projects:     {len(d["missing"])} missing')
+    for f in result.get('findings', []):
+        print(f'  [HIGH] {f["category"]}: {f["description"]}')
+    print(f'  Status: {result["status"].upper()}')
+
+
 if __name__ == '__main__':
+    if len(sys.argv) >= 2 and sys.argv[1] == '--self':
+        result = check_self()
+        print_self_report(result)
+        sys.exit(0 if result['status'] == 'healthy' else 1)
+
     if len(sys.argv) < 2:
-        print('用法: arbiter doctor <项目目录>')
-        print('示例: arbiter doctor ./my-agent-project')
+        print('Usage:')
+        print('  arbiter doctor <project-dir>    -- diagnose multi-agent project')
+        print('  arbiter doctor --self           -- self-check environment')
         sys.exit(1)
 
     path = sys.argv[1]
