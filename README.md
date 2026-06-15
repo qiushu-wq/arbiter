@@ -113,6 +113,7 @@ Built with multi-agent production scars. First deployed on our own 66-agent comp
 
 - **GitHub Issues**: [Submit an issue](https://github.com/qiushu-wq/arbiter/issues) — bug reports, feature requests, questions
 - **QQ**: 2682289241
+- **WeChat**: liu147852012
 - **Email**: 2682289241@qq.com
 
 ---
