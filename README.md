@@ -109,4 +109,13 @@ When you grow from 6 agents to 60, Lite isn't enough. Cloud adds:
 ---
 
 Built with multi-agent production scars. First deployed on our own 66-agent company.
+## Contact
+
+- **GitHub Issues**: [Submit an issue](https://github.com/qiushu-wq/arbiter/issues) — bug reports, feature requests, questions
+- **QQ**: 2682289241
+- **Email**: 2682289241@qq.com
+
+---
+
+Built with multi-agent production scars. First deployed on our own 66-agent company.
 [Star to follow](https://github.com/qiushu-wq/arbiter)
