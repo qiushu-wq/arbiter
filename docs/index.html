@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arbiter Runtime — Multi-Agent Operating System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS — 21st.dev Conventions
+   Shared: admin / dashboard / arbiter-landing
+   ═══════════════════════════════════════════════ */
+
+:root {
+  /* ── Surface — warm gray like 21st.dev, not pure white ── */
+  --background: hsl(240 4% 94%);
+  --foreground: hsl(240 6% 8%);
+  --muted: hsl(240 4% 88%);
+  --muted-foreground: hsl(240 3% 42%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(240 6% 8%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(240 6% 8%);
+  /* Subtle dot pattern for tech feel */
+  --dot-color: hsl(240 4% 78%);
+
+  /* ── Border (0.5px) ── */
+  --border: hsl(210 12% 84%);
+  --border-hover: hsl(210 12% 68%);
+  --ring: hsl(210 12% 84%);
+
+  /* ── Accent — tech blue, single color ── */
+  --primary: hsl(210 90% 44%);
+  --primary-foreground: hsl(0 0% 100%);
+  --primary-soft: hsl(210 90% 44% / 0.06);
+  --primary-muted: hsl(210 90% 44% / 0.10);
+
+  /* ── Semantic ── */
+  --success: hsl(160 70% 32%);
+  --success-soft: hsl(160 70% 32% / 0.08);
+  --warning: hsl(38 88% 40%);
+  --warning-soft: hsl(38 88% 40% / 0.08);
+  --danger: hsl(0 78% 52%);
+  --danger-soft: hsl(0 78% 52% / 0.08);
+
+  /* ── Radius ── */
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+
+  /* ── Shadow (ring stroke) ── */
+  --shadow-ring: 0 0 0 0.5px hsl(215 25% 12% / 0.07);
+  --shadow-ring-hover: 0 0 0 0.5px hsl(215 25% 12% / 0.13);
+
+  /* ── Typography ── */
+  --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+
+  /* ── Transitions ── */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --duration-150: 150ms;
+  --duration-200: 200ms;
+}
+
+/* ═══════════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--background);
+  color: var(--foreground);
+  min-height: 100vh;
+  line-height: 1.5;
+  position: relative;
+}
+
+/* Semiconductor dot-grid — 0.5px precision, barely visible */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(var(--dot-color) 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+  background-position: 0 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+/* Horizontal circuit trace — single hairline at top */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 0.5px;
+  background: var(--border);
+  pointer-events: none;
+  z-index: 0;
+}
+  z-index: 0;
+  opacity: 0.4;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--muted-foreground); border-radius: 4px; }
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════ */
+
+.page-wrap { position: relative; z-index: 1; }
+
+.section {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 72px 28px;
+}
+
+.section-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+}
+
+.section-title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+
+.section-desc {
+  font-size: 14px;
+  color: var(--muted-foreground);
+  max-width: 600px;
+  line-height: 1.65;
+  margin-bottom: 36px;
+}
+
+/* ═══════════════════════════════════════════════
+   NAV
+   ═══════════════════════════════════════════════ */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 28px;
+  background: hsl(0 0% 100% / 0.9);
+  box-shadow: 0 0.5px 0 0 var(--border);
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.nav-logo {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.nav-logo svg {
+  width: 20px;
+  height: 20px;
+  color: var(--primary);
+}
+
+.nav-links {
+  display: flex;
+  gap: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.nav-links a {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--muted-foreground);
+  text-decoration: none;
+  transition: all var(--duration-150) var(--ease-out);
+}
+
+.nav-links a:hover {
+  color: var(--foreground);
+  background: hsl(215 25% 12% / 0.05);
+}
+
+.nav-cta {
+  padding: 6px 16px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity var(--duration-150) var(--ease-out);
+}
+
+.nav-cta:hover { opacity: 0.88; }
+
+/* ═══════════════════════════════════════════════
+   HERO
+   ═══════════════════════════════════════════════ */
+
+.hero {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 80px 28px 60px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 52px;
+  align-items: center;
+}
+
+.hero-text .overline {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+  margin-bottom: 12px;
+}
+
+.hero-text h1 {
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 16px;
+  color: var(--foreground);
+}
+
+.hero-text h1 span {
+  color: var(--primary);
+}
+
+.hero-text p {
+  font-size: 15px;
+  color: var(--muted-foreground);
+  line-height: 1.65;
+  margin-bottom: 28px;
+  max-width: 480px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.hero-actions .btn-primary {
+  padding: 10px 22px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity var(--duration-150) var(--ease-out);
+}
+
+.hero-actions .btn-primary:hover { opacity: 0.88; }
+
+.hero-actions .btn-secondary {
+  padding: 10px 22px;
+  border-radius: var(--radius);
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: var(--shadow-ring);
+  transition: box-shadow var(--duration-150) var(--ease-out);
+}
+
+.hero-actions .btn-secondary:hover {
+  box-shadow: var(--shadow-ring-hover);
+}
+
+.hero-graphic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Architecture ring diagram */
+.ring-diagram {
+  width: 320px;
+  height: 320px;
+  position: relative;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0.5px var(--border);
+  transition: box-shadow var(--duration-200) var(--ease-out);
+}
+
+.ring-1 {
+  inset: 30px;
+  background: var(--primary-soft);
+  box-shadow: 0 0 0 0.5px var(--primary);
+}
+
+.ring-2 {
+  inset: 90px;
+  background: var(--primary-soft);
+  opacity: 0.7;
+}
+
+.ring-3 {
+  inset: 150px;
+  background: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ring-label {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ring-label.r1 { top: 18px; left: 50%; transform: translateX(-50%); }
+.ring-label.r2 { top: 78px; left: 50%; transform: translateX(-50%); font-size: 9.5px; color: var(--muted-foreground); }
+.ring-label.r3 { top: 138px; left: 50%; transform: translateX(-50%); color: var(--primary-foreground); }
+
+.ring-core {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary-foreground);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Ring module dots */
+.ring-module {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+/* ── Corner accent: geometric line art ── */
+.geo-accent {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.geo-accent.tl { top: -8px; left: -8px; border-top: 0.5px solid var(--primary); border-left: 0.5px solid var(--primary); }
+.geo-accent.br { bottom: -8px; right: -8px; border-bottom: 0.5px solid var(--primary); border-right: 0.5px solid var(--primary); }
+
+/* Circuit trace lines on the diagram */
+.circuit-trace {
+  position: absolute;
+  background: var(--primary);
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.circuit-trace.h { height: 0.5px; }
+.circuit-trace.v { width: 0.5px; }
+
+/* ═══════════════════════════════════════════════
+   STAT BAR
+   ═══════════════════════════════════════════════ */
+
+.stat-bar {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 28px 72px;
+  display: flex;
+  gap: 0;
+  justify-content: center;
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+  padding: 20px 16px;
+  border-right: 0.5px solid var(--border);
+}
+
+.stat-item:last-child { border-right: none; }
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+}
+
+.stat-units {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════
+   ARCHITECTURE SECTION (3-Ring)
+   ═══════════════════════════════════════════════ */
+
+.arch-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.arch-card {
+  background: var(--card);
+  box-shadow: var(--shadow-ring);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle corner trace */
+.arch-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  border-top: 0.5px solid var(--primary);
+  border-left: 0.5px solid var(--primary);
+  opacity: 0.2;
+}
+
+.arch-ring-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.arch-card h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+
+.arch-card .arch-desc {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.arch-modules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.arch-module-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══════════════════════════════════════════════
+   PRODUCT TIERS
+   ═══════════════════════════════════════════════ */
+
+.tiers-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.tier-card {
+  background: var(--card);
+  box-shadow: var(--shadow-ring);
+  border-radius: var(--radius-lg);
+  padding: 22px 20px;
+  transition: box-shadow var(--duration-200) var(--ease-out);
+  position: relative;
+}
+
+.tier-card:hover {
+  box-shadow: var(--shadow-ring-hover);
+}
+
+.tier-card.featured {
+  box-shadow: 0 0 0 0.5px var(--primary);
+}
+
+.tier-card.featured::after {
+  content: 'RECOMMENDED';
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+}
+
+.tier-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.tier-user {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-bottom: 12px;
+}
+
+.tier-price {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 4px;
+}
+
+.tier-price-period {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin-bottom: 14px;
+}
+
+.tier-oss {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+
+.tier-oss.mit {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.tier-oss.closed {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.tier-features {
+  list-style: none;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.tier-features li {
+  padding: 5px 0;
+  border-bottom: 0.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tier-features li:last-child { border-bottom: none; }
+
+.tier-features li .check {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--primary);
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+/* ═══════════════════════════════════════════════
+   INSTALL METHODS
+   ═══════════════════════════════════════════════ */
+
+.install-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.install-card {
+  background: var(--card);
+  box-shadow: var(--shadow-ring);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.install-method {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.install-code {
+  background: hsl(215 25% 12%);
+  color: hsl(210 20% 96%);
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.install-code .prompt { color: var(--success); }
+.install-code .comment { color: hsl(210 8% 46%); }
+
+.install-desc {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+  margin-top: 10px;
+}
+
+/* ═══════════════════════════════════════════════
+   COMPETITOR COMPARISON
+   ═══════════════════════════════════════════════ */
+
+.compare-table-wrap {
+  background: var(--card);
+  box-shadow: var(--shadow-ring);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.compare-table thead th {
+  text-align: left;
+  padding: 14px 20px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+  background: hsl(210 15% 92%);
+  border-bottom: 0.5px solid var(--border);
+}
+
+.compare-table thead th:first-child {
+  color: var(--foreground);
+  font-family: var(--font-mono);
+}
+
+.compare-table td {
+  padding: 12px 20px;
+  border-bottom: 0.5px solid var(--border);
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.compare-table td:first-child {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.compare-table .check-mark { color: var(--success); font-weight: 600; }
+.compare-table .cross-mark { color: var(--muted-foreground); }
+.compare-table .partial-mark { color: var(--warning); font-weight: 600; }
+
+.compare-table tbody tr:last-child td { border-bottom: none; }
+
+.compare-table .col-arbiter {
+  background: var(--primary-soft);
+}
+
+.compare-table .col-arbiter td {
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════ */
+
+.footer {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 36px 28px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 0.5px solid var(--border);
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.footer-left .dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: 0.5;
+}
+
+.footer-right {
+  display: flex;
+  gap: 20px;
+}
+
+.footer-right a {
+  color: var(--muted-foreground);
+  text-decoration: none;
+  transition: color var(--duration-150);
+}
+
+.footer-right a:hover {
+  color: var(--foreground);
+}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    text-align: center;
+    padding: 48px 24px 40px;
+  }
+  .hero-text p { max-width: none; }
+  .hero-actions { justify-content: center; }
+  .hero-graphic { order: -1; }
+  .ring-diagram { width: 240px; height: 240px; }
+  .ring-1 { inset: 22px; }
+  .ring-2 { inset: 68px; }
+  .ring-3 { inset: 114px; }
+  .arch-grid { grid-template-columns: 1fr; }
+  .tiers-grid { grid-template-columns: repeat(2, 1fr); }
+  .install-grid { grid-template-columns: 1fr; }
+  .stat-bar { flex-wrap: wrap; }
+  .stat-item { flex: 0 0 50%; border-right: none; border-bottom: 0.5px solid var(--border); }
+}
+
+@media (max-width: 640px) {
+  .hero-text h1 { font-size: 30px; }
+  .section-title { font-size: 22px; }
+  .tiers-grid { grid-template-columns: 1fr; }
+  .stat-item { flex: 1 1 100%; }
+  .nav { padding: 8px 16px; }
+  .nav-links { display: none; }
+  .footer { flex-direction: column; gap: 14px; text-align: center; }
+  .compare-table-wrap { overflow-x: auto; }
+  .compare-table { font-size: 11px; }
+  .compare-table thead th, .compare-table td { padding: 8px 12px; }
+}
+
+/* ═══════════════════════════════════════════════
+   UTILITY
+   ═══════════════════════════════════════════════ */
+
+.mono { font-family: var(--font-mono); }
+.tabnum { font-variant-numeric: tabular-nums; }
+.text-muted { color: var(--muted-foreground); }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+<!-- ═══════════════ NAV ═══════════════ -->
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/>
+        <circle cx="12" cy="12" r="5"/>
+        <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+      </svg>
+    </div>
+    Arbiter Runtime
+  </div>
+  <div class="nav-links">
+    <a href="#architecture">架构</a>
+    <a href="#pricing">定价</a>
+    <a href="#install">安装</a>
+    <a href="#compare">对比</a>
+  </div>
+  <a href="https://github.com/qiushu-wq/arbiter" class="nav-cta">GitHub</a>
+</nav>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<section class="hero">
+  <div class="hero-text">
+    <div class="overline">v0.2.0 · MIT Licensed</div>
+    <h1>The <span>Operating System</span> between Agents and LLMs</h1>
+    <p>Arbiter 不是 Agent 框架。它是 Agent 与 LLM 之间的运行时 —— 管理上下文窗口分配、工具调用调度、状态持久化与故障恢复。就像操作系统管理 CPU 和内存一样，Arbiter 管理 token budget 和 tool invocation。</p>
+    <div class="hero-actions">
+      <a href="#install" class="btn-primary">快速安装</a>
+      <a href="https://github.com/qiushu-wq/arbiter" class="btn-secondary">GitHub</a>
+    </div>
+  </div>
+  <div class="hero-graphic">
+    <div class="ring-diagram">
+      <div class="geo-accent tl"></div>
+      <div class="geo-accent br"></div>
+      <div class="ring ring-1"></div>
+      <div class="ring ring-2"></div>
+      <div class="ring ring-3">
+        <div class="ring-core">ARBITER</div>
+      </div>
+      <div class="ring-label r1">RING 1 — CORE / AUDIT / GUARD</div>
+      <div class="ring-label r2">RING 2 — HEAL / ADAPT / CAP / DRAIN</div>
+      <div class="ring-label r3">RING 3</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ STAT BAR ═══════════════ -->
+<div class="stat-bar">
+  <div class="stat-item">
+    <div class="stat-value">&lt;40</div>
+    <div class="stat-units">lines</div>
+    <div class="stat-label">Core Runtime</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-value">3</div>
+    <div class="stat-units">ring</div>
+    <div class="stat-label">Architecture</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-value">10</div>
+    <div class="stat-units">modules</div>
+    <div class="stat-label">Pluggable</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-value">&lt;1</div>
+    <div class="stat-units">ms</div>
+    <div class="stat-label">Quota Check</div>
+  </div>
+</div>
+
+<!-- ═══════════════ ARCHITECTURE ═══════════════ -->
+<section class="section" id="architecture">
+  <div class="section-label">Architecture</div>
+  <h2 class="section-title">三层 Ring 架构</h2>
+  <p class="section-desc">Arbiter 采用分层防御设计。Ring 1 是核心运行时保证，Ring 2 是自适应中间件，Ring 3 是管理平面。每一层独立可替换，不锁厂商。</p>
+
+  <div class="arch-grid">
+    <div class="arch-card">
+      <div class="arch-ring-label">Ring 1 · Foundation</div>
+      <h4>核心运行时</h4>
+      <p class="arch-desc">最内层保证。固定分区配额、即时回收、12字段审计、异常护栏。不依赖任何外部服务。</p>
+      <div class="arch-modules">
+        <span class="arch-module-tag">Core</span>
+        <span class="arch-module-tag">Audit</span>
+        <span class="arch-module-tag">Guard</span>
+        <span class="arch-module-tag">Status</span>
+      </div>
+    </div>
+
+    <div class="arch-card">
+      <div class="arch-ring-label">Ring 2 · Adaptive</div>
+      <h4>自适应中间件</h4>
+      <p class="arch-desc">基于运行数据动态调整：自动愈合、配额学习、硬限制熔断、优雅关闭。Ring 1 不变的前提下扩展能力。</p>
+      <div class="arch-modules">
+        <span class="arch-module-tag">Heal</span>
+        <span class="arch-module-tag">Adapt</span>
+        <span class="arch-module-tag">Cap</span>
+        <span class="arch-module-tag">Drain</span>
+        <span class="arch-module-tag">Lock</span>
+      </div>
+    </div>
+
+    <div class="arch-card">
+      <div class="arch-ring-label">Ring 3 · Control Plane</div>
+      <h4>管理平面</h4>
+      <p class="arch-desc">可视化仪表盘、配额策略管理、审计轨迹查询、企业级 RBAC。开发者通过 Studio 面板观察和调优运行时。</p>
+      <div class="arch-modules">
+        <span class="arch-module-tag">Studio</span>
+        <span class="arch-module-tag">Enterprise</span>
+        <span class="arch-module-tag">RBAC</span>
+        <span class="arch-module-tag">API</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ PRODUCT TIERS ═══════════════ -->
+<section class="section" id="pricing">
+  <div class="section-label">Pricing</div>
+  <h2 class="section-title">四个版本，从开源到企业</h2>
+  <p class="section-desc">Doctor 和 Lite 永远免费且开源 (MIT)。Cloud 和 Enterprise 为生产环境提供高级功能。</p>
+
+  <div class="tiers-grid">
+    <div class="tier-card">
+      <div class="tier-name">Arbiter Doctor</div>
+      <div class="tier-user">所有人</div>
+      <div class="tier-price">Free</div>
+      <div class="tier-price-period">MIT 开源</div>
+      <span class="tier-oss mit">MIT</span>
+      <ul class="tier-features">
+        <li><span class="check"></span> 项目诊断扫描</li>
+        <li><span class="check"></span> 上下文共享风险检测</li>
+        <li><span class="check"></span> 故障盲区分析</li>
+        <li><span class="check"></span> 状态冲突检测</li>
+        <li><span class="check"></span> 稳定性报告</li>
+      </ul>
+    </div>
+
+    <div class="tier-card featured">
+      <div class="tier-name">Arbiter Lite</div>
+      <div class="tier-user">个人开发者</div>
+      <div class="tier-price">Free</div>
+      <div class="tier-price-period">MIT 开源</div>
+      <span class="tier-oss mit">MIT</span>
+      <ul class="tier-features">
+        <li><span class="check"></span> QuotaManager 配额管理</li>
+        <li><span class="check"></span> 固定分区 + 即时回收</li>
+        <li><span class="check"></span> 审计轨迹 (12字段)</li>
+        <li><span class="check"></span> 40行核心代码</li>
+        <li><span class="check"></span> Python 3.9+</li>
+      </ul>
+    </div>
+
+    <div class="tier-card">
+      <div class="tier-name">Arbiter Cloud</div>
+      <div class="tier-user">小团队</div>
+      <div class="tier-price">$99-299</div>
+      <div class="tier-price-period">/ 月</div>
+      <span class="tier-oss closed">CLOSED</span>
+      <ul class="tier-features">
+        <li><span class="check"></span> Ring 1 + Ring 2 全模块</li>
+        <li><span class="check"></span> 自动愈合 (Heal)</li>
+        <li><span class="check"></span> 智能配额学习 (Adapt)</li>
+        <li><span class="check"></span> 熔断器 (Guard)</li>
+        <li><span class="check"></span> Studio 控制面板</li>
+      </ul>
+    </div>
+
+    <div class="tier-card">
+      <div class="tier-name">Arbiter Enterprise</div>
+      <div class="tier-user">企业</div>
+      <div class="tier-price">¥5,000-10,000</div>
+      <div class="tier-price-period">/ 年</div>
+      <span class="tier-oss closed">CLOSED</span>
+      <ul class="tier-features">
+        <li><span class="check"></span> 所有 Cloud 功能</li>
+        <li><span class="check"></span> 私有化部署</li>
+        <li><span class="check"></span> RBAC 权限管理</li>
+        <li><span class="check"></span> SLA 保障</li>
+        <li><span class="check"></span> 专属技术支持</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ INSTALL ═══════════════ -->
+<section class="section" id="install">
+  <div class="section-label">Install</div>
+  <h2 class="section-title">三种方式，一分钟部署</h2>
+  <p class="section-desc">支持 npm、pip、npx。Doctor 可直接对项目目录运行诊断。Lite 作为 Python 库导入。</p>
+
+  <div class="install-grid">
+    <div class="install-card">
+      <div class="install-method">npx (推荐)</div>
+      <div class="install-code">
+        <span class="prompt">$</span> npx skills@latest add qiushu-wq/arbiter
+      </div>
+      <div class="install-desc">一键安装，自动配置。支持 Claude Code、Cursor、Windsurf 等所有 MCP 兼容平台。</div>
+    </div>
+
+    <div class="install-card">
+      <div class="install-method">pip</div>
+      <div class="install-code">
+        <span class="prompt">$</span> pip install arbiter-runtime<br>
+        <span class="comment"># or</span><br>
+        <span class="prompt">$</span> python arbiter_doctor.py ./your-project
+      </div>
+      <div class="install-desc">Python 库。Doctor 独立单文件，无需安装依赖，直接对项目目录运行诊断。</div>
+    </div>
+
+    <div class="install-card">
+      <div class="install-method">npm</div>
+      <div class="install-code">
+        <span class="prompt">$</span> npm install arbiter-runtime<br>
+        <span class="comment"># or as dev dependency</span><br>
+        <span class="prompt">$</span> npm install -D arbiter-runtime
+      </div>
+      <div class="install-desc">Node.js 项目集成。通过 npm 安装后，在项目中以模块方式引用运行时检查。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ COMPARISON ═══════════════ -->
+<section class="section" id="compare">
+  <div class="section-label">Comparison</div>
+  <h2 class="section-title">与同类方案对比</h2>
+  <p class="section-desc">市场上多数方案是 Agent 框架（定义 Agent 行为），Arbiter 是 Agent 运行时（管理 Agent 资源）。不替代，而是补充。</p>
+
+  <div class="compare-table-wrap">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>能力维度</th>
+          <th class="col-arbiter">Arbiter</th>
+          <th>LangChain</th>
+          <th>CrewAI</th>
+          <th>AutoGen</th>
+          <th>OpenAI Swarm</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>定位</td>
+          <td>Agent 运行时</td>
+          <td>Prompt 编排</td>
+          <td>角色扮演编排</td>
+          <td>对话式多Agent</td>
+          <td>轻量多Agent</td>
+        </tr>
+        <tr>
+          <td>上下文配额管理</td>
+          <td><span class="check-mark">QuotaManager</span></td>
+          <td><span class="cross-mark">--</span></td>
+          <td><span class="cross-mark">--</span></td>
+          <td><span class="partial-mark">部分</span></td>
+          <td><span class="cross-mark">--</span></td>
+        </tr>
+        <tr>
+          <td>令牌审计轨迹</td>
+          <td><span class="check-mark">12字段</span></td>
+          <td><span class="cross-mark">--</span></td>
+          <td><span class="cross-mark">--</span></td>
+          <td><span class="cross-mark">--</span></td>
+          <td><span class="cross-mark">--</span></td>
+        </tr>
+        <tr>
+          <td>熔断器</td>
+          <td><span class="check-mark">Guard</span></td>
+          <td><span class="cross-mark">--</span></td>
+          <td><span class="cross-mark">--</span></td>
+          <td><span class="cross-mark">--</span></td>
+          <td><span class="cross-mark">--</span></td>
+        </tr>
+        <tr>
+          <td>状态持久化</td>
+          <td><span class="check-mark">Lock/回滚</span></td>
+          <td><span class="partial-mark">Memory</span></td>
+          <td><span class="partial-mark">Memory</span></td>
+          <td><span class="cross-mark">--</span></td>
+          <td><span class="cross-mark">--</span></td>
+        </tr>
+        <tr>
+          <td>自愈能力</td>
+          <td><span class="check-mark">Heal</span></td>
+          <td><span class="cross-mark">--</span></td>
+          <td><span class="cross-mark">--</span></td>
+          <td><span class="cross-mark">--</span></td>
+          <td><span class="cross-mark">--</span></td>
+        </tr>
+        <tr>
+          <td>开源协议</td>
+          <td>MIT (Lite/Doctor)</td>
+          <td>MIT</td>
+          <td>MIT</td>
+          <td>CC-BY-4.0</td>
+          <td>MIT</td>
+        </tr>
+        <tr>
+          <td>不锁厂商</td>
+          <td><span class="check-mark">任何 LLM</span></td>
+          <td><span class="check-mark">多模型</span></td>
+          <td><span class="check-mark">多模型</span></td>
+          <td><span class="partial-mark">部分</span></td>
+          <td><span class="cross-mark">OpenAI only</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer class="footer">
+  <div class="footer-left">
+    <span class="dot"></span>
+    <span>Arbiter Runtime</span>
+    <span class="text-muted">v0.2.0</span>
+  </div>
+  <div class="footer-right">
+    <a href="https://github.com/qiushu-wq/arbiter">GitHub</a>
+    <a href="https://github.com/qiushu-wq/arbiter/blob/main/LICENSE">MIT License</a>
+    <a href="https://github.com/qiushu-wq/arbiter/issues">Issues</a>
+    <span class="text-muted">Built with precision</span>
+  </div>
+</footer>
+
+</div>
+
+</body>
+</html>
