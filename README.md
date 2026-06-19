@@ -101,6 +101,18 @@ When you grow from 6 agents to 60, Lite isn't enough. Cloud adds:
 
 **$99-299/month.** [Join waitlist](https://github.com/qiushu-wq/arbiter)
 
+
+## 中文介绍
+
+**Arbiter** 是多 Agent 系统的开源运行时。解决 Agent 上下文管理、配额调度、故障熔断、审计追踪。
+
+- 固定配额 + 即时回收 — Agent 不互相抢上下文窗口
+- 12 字段审计轨迹 — 每次调用可追溯
+- 3 次失败自动熔断 — 不再烧 API 费用
+- pip install 即用 — 个人版永久免费
+
+**关键词**: Agent 运行时, 多 Agent 管理, Agent 熔断器, 上下文管理, 配额调度, Agent 审计, 开源 Agent 框架
+
 ## License
 
 - `arbiter-doctor`, `arbiter-lite`, `stability-metrics`: MIT -- free forever, use in commercial projects
