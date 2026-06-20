@@ -1,134 +1,72 @@
-# Arbiter -- Multi-Agent Runtime
+# Arbiter -- 给多Agent装上安全气囊
 
-**Arbiter** is the missing runtime for multi-agent systems. It manages context window allocation, tool scheduling, and state persistence -- so your agents don't crash when there are more than 3 of them.
+> 不是 Agent 框架。是你的 Agent 崩了之后，3秒熔断、告诉你哪一步崩的、一键恢复的东西。
 
-> If LangChain/CrewAI is Express.js, Arbiter is Node.js. It doesn't tell your agents what to do. It keeps them from stepping on each other.
+## 为什么需要它
 
-## Why
+6个Agent同时跑，两个互相确认了11天没人发现。账单 4.7 万元。
 
-| Problem | Severity | What Happens |
-|---------|----------|--------------|
-| Context contention | Critical | 3 agents share a 128K window. One overflows, all crash. |
-| Swallowed errors | High | `except: pass`. You lose days debugging invisible failures. |
-| State conflicts | High | 2 agents write `state.messages` simultaneously. Data silently lost. |
-| Token boundary crashes | Critical | Agent hits context limit mid-call. No warning, just a 400 error. |
+多Agent崩不是因为模型不够强，是因为没人管：
+- 三个Agent抢一个上下文窗口，一个溢出全崩
+- `except: pass` 吞了错误，37次失败你不知道
+- 两个Agent同时写同一个字段，数据静默丢失
 
-Arbiter solves these with a 4-layer architecture: **Context Budget -> Tool Scheduling -> State Persistence -> Audit Trail**.
+**Arbiter 解决的不是"Agent 不够聪明"，是"Agent 互相踩踏"。**
 
-## Install
+## 快速上手
 
 ```bash
-# Claude Code skill (recommended)
-npx skills@latest add qiushu-wq/arbiter
-
-# Python tools
-pip install git+https://github.com/qiushu-wq/arbiter.git
+pip install arbiter-solo
+arbiter-solo init          # 生成 agent.toml
+arbiter-solo chat           # 开始和 Agent 对话
 ```
 
-## Tools (MIT, Free Forever)
+5 行代码接入现有项目：
 
-### Arbiter Doctor -- Multi-Agent Diagnostic
+```python
+from arbiter_solo import *
+config = Config()
+budget = ContextBudget(200000, config.agent_names)
+audit = AuditTrail()
+loop = AgentLoop(config, budget, audit, Guard())
+result = loop.execute("market", "搜索项目")
+```
 
-Scan any multi-agent project for context contention, blind spots, and state conflicts.
+## 做了什么
 
+```
+Agent 崩溃 → Circuit Breaker 熔断 → Audit Trail 定位 → 一键恢复
+```
+
+- **Circuit Breaker**: 3次失败自动熔断，不再烧 API 费
+- **Audit Trail**: 14字段，每次调用可追溯。排bug从3天变3分钟
+- **Quota**: 每个Agent固定配额，不互相抢上下文
+- **Contract Gate**: 上游输出和下游输入格式对不上 → 直接拦截
+
+[运行崩溃测试]
 ```bash
-arbiter-doctor ./my-agent-project
-arbiter-doctor --self    # self-check your dev environment
+python torture_test.py          # 看6个Agent怎么崩的
+python torture_test.py --fix    # 看 Arbiter 怎么救的
 ```
 
-### Arbiter Lite -- Context Quota Manager
+## 产品分层
 
-40 lines of Python. Fixed partition + instant reclamation.
+| 版本 | 价格 | 说明 |
+|------|------|------|
+| Solo | 免费/MIT | 个人开发者，pip install 即用 |
+| Cloud | 1999元/月 | 自适应配额 + 自动熔断 + 自动恢复 |
+| Enterprise | 定制 | 私有部署 + SSO + SLA |
 
-```python
-from arbiter_lite import QuotaManager
+## 谁在用
 
-qm = QuotaManager(max_tokens=128000, agent_names=["researcher", "writer", "reviewer"])
-tokens = qm.request("researcher", 30000)  # Researcher gets up to 30K
-# Idle for 5min -> half quota reclaimed for active agents
-```
+作者自己的 6 个 Agent 在 7x24 小时跑：搜项目、发提案、回消息、盯差评。2665 个项目管道，36 条线索，跑了 5 天没崩。
 
-### Stability Metrics -- Health Check Framework
+## 联系
 
-Four hard thresholds for production multi-agent systems.
-
-```python
-from stability_metrics import record, check
-
-record(trace_id, agent, action, tokens, quota_pct, status)
-report = check(hours=24)  # -> {failure_rate, context_loss, conflicts, status}
-```
-
-## Architecture (3 Rings)
-
-```
-Ring 1 (Now):    budget + audit + status + doctor + stability
-                 + dynamic tool registry (MCP protocol)
-                 + preflight syntax/memory checker
-Ring 2 (Q3):     guard + heal + adapt + cap + drain + lock
-Ring 3 (Q4):     Studio dashboard + enterprise features
-```
-
-## What's Implemented vs Planned
-
-| Feature | Ring | Status |
-|---------|------|--------|
-| ContextBudget (fixed partition + reclaim) | 1 | Done |
-| AuditTrail (12-field recording) | 1 | Done |
-| Stability Report (4 thresholds) | 1 | Done |
-| Doctor Diagnostic Tool | 1 | Done |
-| Doctor --self mode | 1 | Done |
-| MCP Dynamic Tool Registry | 1 | Done |
-| Preflight Checker | 1 | Done |
-| Guard (circuit breaker) | 2 | Q3 2026 |
-| Heal (auto-recovery) | 2 | Q3 2026 |
-| Adapt (learn usage patterns) | 2 | Q3 2026 |
-| Cap (hard token limits) | 2 | Q3 2026 |
-| Drain (graceful shutdown) | 2 | Q3 2026 |
-| Lock (per-project state locks) | 2 | Q3 2026 |
-| Studio Dashboard | 3 | Q4 2026 |
-
-## Arbiter Cloud (Commercial, Q3 2026)
-
-When you grow from 6 agents to 60, Lite isn't enough. Cloud adds:
-
-- **Guard**: Circuit breaker -- 3 failures/10min -> auto-fuse
-- **Heal**: Auto-recovery from agent failures
-- **Adapt**: Learns usage patterns, pre-allocates quota
-- **Cap**: Hard token limits per agent per month
-- **Drain**: Graceful agent shutdown without losing in-flight tasks
-- **Lock**: Per-project state locks to prevent write conflicts
-
-**$99-299/month.** [Join waitlist](https://github.com/qiushu-wq/arbiter)
-
-
-## 中文介绍
-
-**Arbiter** 是多 Agent 系统的开源运行时。解决 Agent 上下文管理、配额调度、故障熔断、审计追踪。
-
-- 固定配额 + 即时回收 — Agent 不互相抢上下文窗口
-- 12 字段审计轨迹 — 每次调用可追溯
-- 3 次失败自动熔断 — 不再烧 API 费用
-- pip install 即用 — 个人版永久免费
-
-**关键词**: Agent 运行时, 多 Agent 管理, Agent 熔断器, 上下文管理, 配额调度, Agent 审计, 开源 Agent 框架
-
-## License
-
-- `arbiter-doctor`, `arbiter-lite`, `stability-metrics`: MIT -- free forever, use in commercial projects
-- Arbiter Cloud & Enterprise: Commercial
+- GitHub Issues: [提交 Issue](https://github.com/qiushu-wq/arbiter/issues)
+- QQ: 2682289241
+- 微信: liu147852012
 
 ---
 
-Built with multi-agent production scars. First deployed on our own 66-agent company.
-## Contact
-
-- **GitHub Issues**: [Submit an issue](https://github.com/qiushu-wq/arbiter/issues) — bug reports, feature requests, questions
-- **QQ**: 2682289241
-- **WeChat**: liu147852012
-- **Email**: 2682289241@qq.com
-
----
-
-Built with multi-agent production scars. First deployed on our own 66-agent company.
-[Star to follow](https://github.com/qiushu-wq/arbiter)
+作者一个人全职在搞。如果对你有用，留个 Star，或者在 Issue 里喷我代码写得烂。
