@@ -239,7 +239,7 @@ def print_self_report(result):
     print(f'  Status: {result["status"].upper()}')
 
 
-if __name__ == '__main__':
+def main():
     if len(sys.argv) >= 2 and sys.argv[1] == '--self':
         result = check_self()
         print_self_report(result)
@@ -247,10 +247,14 @@ if __name__ == '__main__':
 
     if len(sys.argv) < 2:
         print('Usage:')
-        print('  arbiter doctor <project-dir>    -- diagnose multi-agent project')
-        print('  arbiter doctor --self           -- self-check environment')
+        print('  arbiter-doctor <project-dir>    -- diagnose multi-agent project')
+        print('  arbiter-doctor --self           -- self-check environment')
         sys.exit(1)
 
     path = sys.argv[1]
     result = scan_directory(path)
     print_report(result)
+
+
+if __name__ == '__main__':
+    main()
