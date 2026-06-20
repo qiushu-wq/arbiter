@@ -10,12 +10,12 @@ from typing import Dict, List
 class QuotaManager:
     """固定分区 + 即时回收的配额管理器"""
 
-    def __init__(self, max_tokens: int, agent_names: List[str]):
+    def __init__(self, max_tokens: int, agent_names: List[str], idle_timeout: int = 300):
         self.max_tokens = max_tokens
         self.partition_size = max_tokens // max(len(agent_names), 1)
         self.quotas: Dict[str, int] = {a: self.partition_size for a in agent_names}
         self.last_active: Dict[str, datetime] = {a: datetime.now() for a in agent_names}
-        self.idle_timeout = 300  # 5分钟
+        self.idle_timeout = idle_timeout  # 默认5分钟
 
     def request(self, agent: str, tokens_needed: int) -> int:
         """请求配额。返回实际获得的token数。"""
@@ -39,5 +39,9 @@ class QuotaManager:
         return granted
 
     def status(self) -> Dict:
-        return {a: {'quota': q, 'partition': self.partition_size}
-                for a, q in self.quotas.items()}
+        now = datetime.now()
+        return {a: {
+            'quota': q,
+            'partition': self.partition_size,
+            'idle_seconds': int((now - self.last_active[a]).total_seconds())
+        } for a, q in self.quotas.items()}

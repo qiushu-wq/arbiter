@@ -6,8 +6,23 @@ Four hard thresholds:
   - State conflicts = 0
   - Pipeline stall < 10 minutes
 """
-import json, os
+import json, os, sys
 from datetime import datetime, timedelta
+
+# Cross-platform file locking
+if sys.platform == 'win32':
+    import msvcrt
+    def _lock(f):
+        # Lock a large region to cover the write (max file size)
+        msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 0x7FFFFFFF)
+    def _unlock(f):
+        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 0x7FFFFFFF)
+else:
+    import fcntl
+    def _lock(f):
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+    def _unlock(f):
+        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 THRESHOLDS = {
     "agent_failure_rate": 0.05,
@@ -26,7 +41,11 @@ def record(trace_id, agent_name, action_type, tokens_used, quota_pct, status,
         "time": datetime.now().isoformat(),
     }
     with open(metrics_file, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        try:
+            _lock(f)
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        finally:
+            _unlock(f)
     return entry
 
 def check(hours=24, metrics_file="stability_metrics.jsonl"):

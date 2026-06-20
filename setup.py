@@ -9,7 +9,7 @@ setup(
     author='qiushu-wq',
     url='https://github.com/qiushu-wq/arbiter',
     packages=find_packages(),
-    py_modules=['arbiter_lite', 'arbiter_doctor', 'stability_metrics'],
+    py_modules=['arbiter_doctor', 'stability_metrics'],
     python_requires='>=3.9',
     entry_points={
         'console_scripts': [

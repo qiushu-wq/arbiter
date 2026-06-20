@@ -59,7 +59,7 @@ CHECKS = [
         'category': '上下文边界溢出',
         'pattern': r'(context_window|max_input_tokens)\s*=\s*(\d{5,6})',
         'description': '上下文窗口接近满载运行',
-        'detail': f'你的Agent在{None}K窗口边缘跑，12%的调用可能触发截断。Arbiter的adapt配额策略提前分配，避免边界溢出。',
+        'detail': '你的Agent上下文窗口接近满载，12%的调用可能触发截断。Arbiter的adapt配额策略提前分配，避免边界溢出。',
     },
 ]
 
@@ -88,8 +88,9 @@ def scan_directory(path):
         try:
             with open(fp, encoding='utf-8', errors='ignore') as f:
                 all_code += f.read() + '\n'
-        except:
-            pass
+        except Exception as e:
+            import sys
+            print(f'[WARN] Failed to read {fp}: {e}', file=sys.stderr)
 
     framework = detect_framework(all_code)
     agent_count = estimate_agent_count(all_code, py_files)
@@ -102,7 +103,7 @@ def scan_directory(path):
             try:
                 with open(fp, encoding='utf-8', errors='ignore') as f:
                     content = f.read()
-                    found = re.findall(check['pattern'], content, re.MULTILINE)
+                    found = re.findall(check['pattern'], content, re.MULTILINE | re.DOTALL)
                     if found:
                         # Get line numbers
                         lines = content.split('\n')
@@ -110,8 +111,9 @@ def scan_directory(path):
                             if re.search(check['pattern'], line):
                                 matches.append(f'{os.path.basename(fp)}:{i+1}')
                                 break
-            except:
-                pass
+            except Exception as e:
+                import sys
+                print(f'[WARN] Failed to scan {fp}: {e}', file=sys.stderr)
         if matches:
             findings.append({**check, 'files': matches[:3]})  # Max 3 locations
 
@@ -158,8 +160,9 @@ def estimate_agent_count(code, files):
                 c = f.read()
             if re.search(r'(from langgraph|import langgraph|StateGraph|add_node)', c):
                 count += 1
-        except:
-            pass
+        except Exception as e:
+            import sys
+            print(f'[WARN] Failed to scan {fp}: {e}', file=sys.stderr)
     return max(min(count, 20), 1)
 
 def print_report(result):
@@ -210,12 +213,32 @@ def print_report(result):
 def check_self(project_dirs=None, min_memory_files=8):
     home = os.path.expanduser('~')
     findings = []
-    details = {'claude_md_ok': False, 'projects_ok': True, 'missing': []}
+    details = {'claude_md_ok': False, 'projects_ok': True, 'missing': [], 'memory_ok': False}
     claude_md = os.path.join(home, '.claude', 'CLAUDE.md')
     details['claude_md_ok'] = os.path.exists(claude_md)
+
+    # Check memory directory
+    memory_dir = os.path.join(home, '.claude', 'projects')
+    memory_files = []
+    if os.path.isdir(memory_dir):
+        for root, dirs, files in os.walk(memory_dir):
+            for f in files:
+                if f.endswith('.md'):
+                    memory_files.append(os.path.join(root, f))
+    details['memory_ok'] = len(memory_files) >= min_memory_files
+    details['memory_count'] = len(memory_files)
+    if not details['memory_ok']:
+        findings.append({
+            'severity': 'high', 'category': 'Memory Degraded',
+            'description': f'Memory files: {len(memory_files)} (min: {min_memory_files})',
+            'detail': 'Memory system is below minimum threshold. Run arbiter-doctor --self to recheck.'
+        })
+
+    # Check project dirs if provided
     dirs = project_dirs or {}
     for name, path in dirs.items():
-        if not os.path.isdir(os.path.join(home, path)):
+        full = os.path.join(home, path)
+        if not os.path.isdir(full):
             details['missing'].append(name)
             details['projects_ok'] = False
             findings.append({
