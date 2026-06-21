@@ -18,7 +18,12 @@
 ### arbiter-doctor — 诊断你的 Agent 项目
 
 ```bash
+# PyPI（推荐）
+pip install arbiter-lite
+
+# 或从 GitHub
 pip install git+https://github.com/qiushu-wq/arbiter.git
+
 arbiter-doctor ./my-agent-project
 ```
 
@@ -39,7 +44,8 @@ Diagnosis: 5 Agents - LangGraph - 23 files
 ### arbiter-lite — 40 行配额管理器
 
 ```bash
-pip install git+https://github.com/qiushu-wq/arbiter.git
+pip install arbiter-lite
+# 或: pip install git+https://github.com/qiushu-wq/arbiter.git
 ```
 
 ```python
@@ -72,7 +78,10 @@ print(qm.status())                     # 查看每个 Agent 配额使用情况
 ## 安装
 
 ```bash
-# 一个命令，诊断工具 + 配额管理器全装上
+# PyPI（推荐）
+pip install arbiter-lite
+
+# 或从 GitHub
 pip install git+https://github.com/qiushu-wq/arbiter.git
 
 # 诊断项目
