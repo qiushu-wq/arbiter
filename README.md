@@ -2,6 +2,16 @@
 
 > 不是 Agent 框架。是你的 Agent 崩了之后，3 秒定位、一键恢复的东西。
 
+## 开源边界
+
+| 组件 | 开源 | 获取方式 |
+|------|------|---------|
+| arbiter-doctor + arbiter-lite + stability_metrics | ✅ MIT | `pip install arbiter-lite` |
+| Arbiter Solo | 🔒 闭源分发 | 联系作者 |
+| Arbiter Cloud / Enterprise | 🔒 商业授权 | 联系作者 |
+
+> 本仓库 MIT 协议仅适用于当前仓库内的代码。Solo/Cloud/Enterprise 不在本仓库范围内。
+
 ## 为什么需要它
 
 6 个 Agent 同时跑，两个互相确认了 11 天没人发现。账单 4.7 万元。
@@ -66,9 +76,9 @@ print(qm.status())                     # 查看每个 Agent 配额使用情况
 |------|------|------|------|
 | **arbiter-doctor** | 免费 MIT | ✅ 可用 | 诊断工具，一行命令扫描项目 |
 | **arbiter-lite** | 免费 MIT | ✅ 可用 | 40 行配额管理器，够管 3-10 Agent |
-| **Arbiter Solo** | MIT | 🔒 闭源 | Agent Loop + 记忆 + 技能系统 |
-| **Arbiter Cloud** | ¥99-299/月 | 🔒 闭源 | heal + guard + adapt + cap + drain |
-| **Arbiter Enterprise** | ¥5,000-10,000/年 | 🔒 闭源 | SSO + RBAC + SLA + 私有部署 |
+| **Arbiter Solo** | — | 🔒 闭源分发 | Agent Loop + 记忆 + 技能系统 |
+| **Arbiter Cloud** | 299/月 | 🔒 闭源 | heal + guard + adapt + cap + drain |
+| **Arbiter Enterprise** | 5000/年 | 🔒 闭源 | SSO + RBAC + SLA + 私有部署 |
 
 **什么时候需要升级？**
 - Agent 超过 10 个 → 固定分区不够用，需要 adapt 自适应

@@ -123,14 +123,14 @@ def arbiter_demo():
 
     print(D + "   [恢复] 一键重置" + X)
     time.sleep(1)
-    print(f"{G}   arbiter-solo reset --agent=market → CLOSED (858ms){X}")
-    print(f"{G}   恢复。0数据丢失。0手动重启。{X}")
+    print(f"{G}   arbiter-doctor ./your-project → 3 issues found (858ms){X}")
+    print(f"{G}   诊断完成。0误报。{X}")
     print()
 
     print(C + B + "="*50 + X)
-    print(C + B + "   Arbiter Solo — 给多Agent装上安全气囊" + X)
+    print(C + B + "   Arbiter — 给多Agent装上安全气囊" + X)
     print(C + "   github.com/qiushu-wq/arbiter" + X)
-    print(C + "   pip install arbiter-solo" + X)
+    print(C + "   pip install arbiter-lite" + X)
     print(C + B + "="*50 + X)
 
 if __name__ == "__main__":
