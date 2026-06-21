@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent 公司 · 总指挥面板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS — Dark Dashboard
+   Warm accents on deep slate background
+   ═══════════════════════════════════════════════ */
+
+:root {
+  /* ── Surface (dark slate) ── */
+  --bg-root: hsl(240 8% 4%);
+  --bg-elevated: hsl(240 6% 7%);
+  --bg-card: hsl(240 5% 9%);
+  --bg-card-hover: hsl(240 5% 11%);
+  --bg-overlay: hsl(240 5% 12%);
+
+  /* ── Foreground ── */
+  --fg-primary: hsl(240 5% 93%);
+  --fg-secondary: hsl(240 4% 64%);
+  --fg-muted: hsl(240 3% 42%);
+  --fg-inverse: hsl(240 6% 6%);
+
+  /* ── Warm accent (amber/gold) ── */
+  --accent: hsl(36 94% 54%);
+  --accent-soft: hsl(36 94% 54% / 0.08);
+  --accent-muted: hsl(36 94% 54% / 0.14);
+  --accent-glow: hsl(36 94% 54% / 0.25);
+  --accent-fg: hsl(36 30% 8%);
+
+  /* ── Ring colors (warm progression) ── */
+  --ring-1: hsl(36 94% 54%);   /* Gold — Core/Audit/Guard */
+  --ring-1-soft: hsl(36 94% 54% / 0.06);
+  --ring-2: hsl(22 90% 52%);   /* Orange — Heal/Adapt/Cap */
+  --ring-2-soft: hsl(22 90% 52% / 0.06);
+  --ring-3: hsl(10 82% 54%);   /* Warm red — Studio */
+  --ring-3-soft: hsl(10 82% 54% / 0.06);
+
+  /* ── Semantic ── */
+  --success: hsl(158 72% 44%);
+  --success-soft: hsl(158 72% 44% / 0.08);
+  --warning: hsl(38 92% 50%);
+  --warning-soft: hsl(38 92% 50% / 0.08);
+  --danger: hsl(0 82% 58%);
+  --danger-soft: hsl(0 82% 58% / 0.08);
+  --info: hsl(210 80% 56%);
+  --info-soft: hsl(210 80% 56% / 0.08);
+
+  /* ── Border ── */
+  --border: hsl(240 5% 15%);
+  --border-hover: hsl(240 5% 24%);
+  --border-active: hsl(36 50% 30%);
+
+  /* ── Radius ── */
+  --radius-sm: 5px;
+  --radius: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* ── Shadow ── */
+  --shadow-card: 0 0 0 0.5px hsl(240 5% 18% / 0.6), 0 2px 8px hsl(0 0% 0% / 0.3);
+  --shadow-card-hover: 0 0 0 0.5px hsl(36 40% 30% / 0.5), 0 4px 16px hsl(0 0% 0% / 0.45);
+  --shadow-glow-accent: 0 0 20px var(--accent-glow);
+
+  /* ── Typography ── */
+  --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+
+  /* ── Transitions ── */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-150: 150ms;
+  --duration-200: 200ms;
+  --duration-300: 300ms;
+}
+
+/* ═══════════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-root);
+  color: var(--fg-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+  position: relative;
+}
+
+/* Subtle dot-grid, darker than the light version */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(hsl(240 4% 14%) 0.5px, transparent 0.5px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+}
+
+/* Top hairline accent */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(240 4% 22%); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(240 4% 32%); }
+
+/* ═══════════════════════════════════════════════
+   LAYOUT — CSS Grid
+   ═══════════════════════════════════════════════ */
+
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 24px 48px;
+}
+
+/* ── Top Bar ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 0;
+  border-bottom: 0.5px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  border: 0.5px solid var(--accent-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topbar-logo svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+}
+
+.topbar-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+
+.topbar-badge {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 0.5px solid var(--accent-muted);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-secondary);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-dot.warn {
+  background: var(--warning);
+  box-shadow: 0 0 8px var(--warning);
+}
+
+.status-dot.danger {
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+}
+
+/* ── Dashboard Grid ── */
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 14px;
+}
+
+/* ═══════════════════════════════════════════════
+   CARD BASE
+   ═══════════════════════════════════════════════ */
+
+.card {
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow var(--duration-200) var(--ease-out);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Corner trace accent (top-left) */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border-top: 0.5px solid var(--accent);
+  border-left: 0.5px solid var(--accent);
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.card-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-primary);
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.card-subtitle {
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+
+/* ═══════════════════════════════════════════════
+   STABILITY METRICS (Row 1 — 4 cards)
+   ═══════════════════════════════════════════════ */
+
+.metrics-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.metric-card {
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--duration-200) var(--ease-out);
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border-top: 0.5px solid var(--accent);
+  border-left: 0.5px solid var(--accent);
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.metric-card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.metric-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.metric-icon.good { background: var(--success-soft); color: var(--success); }
+.metric-icon.warn { background: var(--warning-soft); color: var(--warning); }
+.metric-icon.danger { background: var(--danger-soft); color: var(--danger); }
+.metric-icon.info { background: var(--info-soft); color: var(--info); }
+
+.metric-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 99px;
+  letter-spacing: 0.04em;
+}
+
+.metric-badge.pass { background: var(--success-soft); color: var(--success); }
+.metric-badge.warn { background: var(--warning-soft); color: var(--warning); }
+.metric-badge.fail { background: var(--danger-soft); color: var(--danger); }
+
+.metric-value {
+  font-family: var(--font-mono);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.metric-target {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--fg-muted);
+  margin-bottom: 8px;
+}
+
+.metric-bar-wrap {
+  height: 3px;
+  background: hsl(240 5% 14%);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.metric-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.8s var(--ease-out);
+}
+
+.metric-bar-fill.good { background: var(--success); }
+.metric-bar-fill.warn { background: var(--warning); }
+.metric-bar-fill.danger { background: var(--danger); }
+
+/* ═══════════════════════════════════════════════
+   ARCHITECTURE RING (Row 2 — spans 4 cols)
+   ═══════════════════════════════════════════════ */
+
+.arch-card {
+  grid-column: span 5;
+}
+
+.ring-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0 8px;
+  position: relative;
+  min-height: 340px;
+}
+
+.ring-svg {
+  width: 300px;
+  height: 300px;
+}
+
+.ring-legend {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  color: var(--fg-secondary);
+}
+
+.legend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.legend-dot.r1 { background: var(--ring-1); }
+.legend-dot.r2 { background: var(--ring-2); }
+.legend-dot.r3 { background: var(--ring-3); }
+
+/* Ring module tags */
+.ring-modules {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.ring-module-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ring-module-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ring-module-dot.r1 { background: var(--ring-1); box-shadow: 0 0 6px var(--ring-1); }
+.ring-module-dot.r2 { background: var(--ring-2); box-shadow: 0 0 6px var(--ring-2); }
+.ring-module-dot.r3 { background: var(--ring-3); box-shadow: 0 0 6px var(--ring-3); }
+
+.ring-module-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-secondary);
+  width: 56px;
+}
+
+.ring-module-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.module-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.module-tag.r1 { background: var(--ring-1-soft); color: var(--ring-1); border: 0.5px solid hsl(36 40% 30%); }
+.module-tag.r2 { background: var(--ring-2-soft); color: var(--ring-2); border: 0.5px solid hsl(22 40% 24%); }
+.module-tag.r3 { background: var(--ring-3-soft); color: var(--ring-3); border: 0.5px solid hsl(10 40% 22%); }
+
+/* ═══════════════════════════════════════════════
+   AGENT QUOTA (Row 2 — spans 3 cols)
+   ═══════════════════════════════════════════════ */
+
+.quota-card {
+  grid-column: span 3;
+}
+
+.agent-quota-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.agent-quota-item {
+  background: var(--bg-overlay);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  border: 0.5px solid var(--border);
+  transition: border-color var(--duration-150) var(--ease-out);
+}
+
+.agent-quota-item:hover {
+  border-color: var(--border-hover);
+}
+
+.agent-quota-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.agent-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-primary);
+}
+
+.agent-tokens {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-secondary);
+}
+
+.agent-tokens .used { color: var(--accent); font-weight: 600; }
+
+.quota-bar-wrap {
+  height: 4px;
+  background: hsl(240 5% 12%);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.quota-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.6s var(--ease-out);
+}
+
+.quota-bar-fill.low { background: var(--success); }
+.quota-bar-fill.mid { background: var(--warning); }
+.quota-bar-fill.high { background: var(--danger); }
+
+.agent-meta {
+  display: flex;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--fg-muted);
+}
+
+/* ═══════════════════════════════════════════════
+   PIPELINE FUNNEL (Row 2 — spans 4 cols)
+   ═══════════════════════════════════════════════ */
+
+.funnel-card {
+  grid-column: span 4;
+}
+
+.funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px 0;
+}
+
+.funnel-stage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  position: relative;
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-150) var(--ease-out);
+}
+
+.funnel-stage:hover {
+  background: var(--bg-overlay);
+}
+
+.funnel-bar-wrap {
+  flex: 1;
+  height: 26px;
+  background: hsl(240 5% 10%);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+}
+
+.funnel-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  transition: width 0.8s var(--ease-out);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-inverse);
+}
+
+.funnel-stage:nth-child(1) .funnel-bar-fill { background: var(--ring-1); width: 100%; }
+.funnel-stage:nth-child(2) .funnel-bar-fill { background: hsl(30 85% 48%); width: 42%; }
+.funnel-stage:nth-child(3) .funnel-bar-fill { background: hsl(25 80% 45%); width: 18%; }
+.funnel-stage:nth-child(4) .funnel-bar-fill { background: var(--ring-2); width: 6%; }
+
+.funnel-label {
+  width: 64px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-secondary);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.funnel-count {
+  width: 40px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-primary);
+  flex-shrink: 0;
+}
+
+.funnel-pct {
+  width: 44px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.funnel-conv {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--fg-muted);
+  min-width: 52px;
+  text-align: left;
+}
+
+/* ═══════════════════════════════════════════════
+   AUDIT TRAIL (Row 3 — full width)
+   ═══════════════════════════════════════════════ */
+
+.audit-card {
+  grid-column: 1 / -1;
+}
+
+.audit-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--success);
+}
+
+.audit-live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+.audit-table-wrap {
+  overflow-x: auto;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+.audit-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.audit-table thead th {
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-muted);
+  background: var(--bg-overlay);
+  border-bottom: 0.5px solid var(--border);
+  white-space: nowrap;
+}
+
+.audit-table tbody td {
+  padding: 7px 10px;
+  border-bottom: 0.5px solid hsl(240 5% 12%);
+  color: var(--fg-secondary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  transition: background var(--duration-150);
+}
+
+.audit-table tbody tr {
+  transition: background var(--duration-150);
+}
+
+.audit-table tbody tr:hover td {
+  background: var(--bg-overlay);
+}
+
+.audit-table tbody tr.new-row {
+  animation: row-highlight 2s var(--ease-out);
+}
+
+@keyframes row-highlight {
+  0% { background: var(--accent-soft); }
+  100% { background: transparent; }
+}
+
+.audit-cell-time { color: var(--fg-primary); font-weight: 500; }
+.audit-cell-agent { color: var(--accent); }
+.audit-cell-action { font-weight: 500; }
+.audit-cell-tokens { font-weight: 600; color: var(--fg-primary); }
+.audit-cell-status-ok { color: var(--success); }
+.audit-cell-status-warn { color: var(--warning); }
+.audit-cell-status-err { color: var(--danger); }
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════ */
+
+@media (max-width: 1280px) {
+  .arch-card { grid-column: span 6; }
+  .quota-card { grid-column: span 6; }
+  .funnel-card { grid-column: span 6; }
+}
+
+@media (max-width: 960px) {
+  .metrics-row { grid-template-columns: repeat(2, 1fr); }
+  .arch-card { grid-column: span 12; }
+  .quota-card { grid-column: span 6; }
+  .funnel-card { grid-column: span 6; }
+}
+
+@media (max-width: 640px) {
+  .app { padding: 0 12px 24px; }
+  .metrics-row { grid-template-columns: 1fr; }
+  .arch-card, .quota-card, .funnel-card { grid-column: 1 / -1; }
+  .topbar { flex-direction: column; gap: 8px; align-items: flex-start; }
+  .ring-svg { width: 220px; height: 220px; }
+  .audit-table-wrap { max-height: 240px; }
+}
+
+/* ═══════════════════════════════════════════════
+   UTILITY
+   ═══════════════════════════════════════════════ */
+
+.mono { font-family: var(--font-mono); }
+.tabnum { font-variant-numeric: tabular-nums; }
+.text-muted { color: var(--fg-muted); }
+.text-accent { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<!-- ═══════════════ TOP BAR ═══════════════ -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/>
+        <circle cx="12" cy="12" r="5.5"/>
+        <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+      </svg>
+    </div>
+    <span class="topbar-title">Agent 公司 · 总指挥面板</span>
+    <span class="topbar-badge">Arbiter Runtime</span>
+  </div>
+  <div class="topbar-right">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">全部系统在线</span>
+    <span style="opacity:0.5;">·</span>
+    <span id="clock">--</span>
+  </div>
+</header>
+
+<!-- ═══════════════ DASHBOARD GRID ═══════════════ -->
+<div class="dashboard">
+
+  <!-- ── Row 1: Stability Metrics ── -->
+  <div class="metrics-row">
+    <!-- 指标 1: 失败率 -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <div class="metric-icon good">&#x2713;</div>
+        <span class="metric-badge pass" id="badgeFailRate">PASS</span>
+      </div>
+      <div class="metric-value" id="valFailRate">2.1<span style="font-size:16px;color:var(--fg-muted)">%</span></div>
+      <div class="metric-target">目标 &lt; 5%</div>
+      <div class="metric-bar-wrap">
+        <div class="metric-bar-fill good" id="barFailRate" style="width: 42%"></div>
+      </div>
+    </div>
+
+    <!-- 指标 2: 上下文丢失 -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <div class="metric-icon good">&#x25C7;</div>
+        <span class="metric-badge pass" id="badgeCtxLoss">PASS</span>
+      </div>
+      <div class="metric-value" id="valCtxLoss">0.3<span style="font-size:16px;color:var(--fg-muted)">&permil;</span></div>
+      <div class="metric-target">目标 &lt; 1&permil;</div>
+      <div class="metric-bar-wrap">
+        <div class="metric-bar-fill good" id="barCtxLoss" style="width: 30%"></div>
+      </div>
+    </div>
+
+    <!-- 指标 3: 状态冲突 -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <div class="metric-icon good">&#x25A3;</div>
+        <span class="metric-badge pass" id="badgeConflict">PASS</span>
+      </div>
+      <div class="metric-value" id="valConflict">0</div>
+      <div class="metric-target">目标 = 0</div>
+      <div class="metric-bar-wrap">
+        <div class="metric-bar-fill good" id="barConflict" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- 指标 4: 管道卡住时间 -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <div class="metric-icon good">&#x25C9;</div>
+        <span class="metric-badge pass" id="badgeStuck">PASS</span>
+      </div>
+      <div class="metric-value" id="valStuck">3.2<span style="font-size:16px;color:var(--fg-muted)">min</span></div>
+      <div class="metric-target">目标 &lt; 10min</div>
+      <div class="metric-bar-wrap">
+        <div class="metric-bar-fill good" id="barStuck" style="width: 32%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Row 2: Architecture Ring ── -->
+  <div class="card arch-card">
+    <div class="card-header">
+      <div>
+        <div class="card-label">Architecture</div>
+        <div class="card-title">Arbiter 三层 Ring 架构</div>
+      </div>
+    </div>
+    <div class="ring-container">
+      <svg class="ring-svg" viewBox="0 0 300 300">
+        <defs>
+          <radialGradient id="glow1" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="hsl(36 94% 54% / 0.06)"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </radialGradient>
+        </defs>
+        <!-- Ring 1 (outer) -->
+        <circle cx="150" cy="150" r="135" fill="none" stroke="var(--ring-1)" stroke-width="0.5" opacity="0.5"/>
+        <circle cx="150" cy="150" r="125" fill="hsl(36 94% 54% / 0.03)" stroke="var(--ring-1)" stroke-width="0.8" opacity="0.7"/>
+        <!-- Ring 2 (middle) -->
+        <circle cx="150" cy="150" r="90" fill="none" stroke="var(--ring-2)" stroke-width="0.5" opacity="0.5"/>
+        <circle cx="150" cy="150" r="80" fill="hsl(22 90% 52% / 0.03)" stroke="var(--ring-2)" stroke-width="0.8" opacity="0.7"/>
+        <!-- Ring 3 (inner) -->
+        <circle cx="150" cy="150" r="48" fill="hsl(10 82% 54% / 0.06)" stroke="var(--ring-3)" stroke-width="1" opacity="0.8"/>
+        <!-- Core -->
+        <circle cx="150" cy="150" r="22" fill="var(--accent)" opacity="0.9"/>
+        <text x="150" y="147" text-anchor="middle" dominant-baseline="middle"
+              font-family="var(--font-mono)" font-size="8" font-weight="700"
+              fill="var(--accent-fg)" letter-spacing="0.06em">CORE</text>
+
+        <!-- Ring labels -->
+        <text x="150" y="217" text-anchor="middle" font-family="var(--font-mono)" font-size="8" font-weight="600"
+              fill="var(--ring-1)" letter-spacing="0.05em">R1 — CORE / AUDIT / GUARD</text>
+        <text x="150" y="214" text-anchor="middle" font-family="var(--font-mono)" font-size="8" font-weight="600"
+              fill="var(--ring-2)" letter-spacing="0.05em">R2 — HEAL / ADAPT / CAP</text>
+        <text x="150" y="211" text-anchor="middle" font-family="var(--font-mono)" font-size="8" font-weight="600"
+              fill="var(--ring-3)" letter-spacing="0.05em">R3 — STUDIO</text>
+
+        <!-- Module dots on Ring 1 -->
+        <circle cx="150" cy="35" r="3" fill="var(--ring-1)" opacity="0.8"><animate attributeName="opacity" values="0.8;0.3;0.8" dur="3s" repeatCount="indefinite"/></circle>
+        <circle cx="260" cy="100" r="3" fill="var(--ring-1)" opacity="0.6"><animate attributeName="opacity" values="0.6;0.2;0.6" dur="2.5s" repeatCount="indefinite"/></circle>
+        <circle cx="265" cy="200" r="3" fill="var(--ring-1)" opacity="0.7"><animate attributeName="opacity" values="0.7;0.2;0.7" dur="3.5s" repeatCount="indefinite"/></circle>
+        <circle cx="150" cy="265" r="3" fill="var(--ring-1)" opacity="0.5"><animate attributeName="opacity" values="0.5;0.15;0.5" dur="4s" repeatCount="indefinite"/></circle>
+
+        <!-- Module dots on Ring 2 -->
+        <circle cx="150" cy="65" r="2.5" fill="var(--ring-2)" opacity="0.7"><animate attributeName="opacity" values="0.7;0.2;0.7" dur="2.8s" repeatCount="indefinite"/></circle>
+        <circle cx="230" cy="90" r="2.5" fill="var(--ring-2)" opacity="0.6"><animate attributeName="opacity" values="0.6;0.2;0.6" dur="3.2s" repeatCount="indefinite"/></circle>
+        <circle cx="240" cy="190" r="2.5" fill="var(--ring-2)" opacity="0.8"><animate attributeName="opacity" values="0.8;0.3;0.8" dur="2.6s" repeatCount="indefinite"/></circle>
+
+        <!-- Geometric corner accents -->
+        <path d="M10 20 L10 10 L20 10" fill="none" stroke="var(--accent)" stroke-width="0.5" opacity="0.2"/>
+        <path d="M290 280 L290 290 L280 290" fill="none" stroke="var(--accent)" stroke-width="0.5" opacity="0.2"/>
+      </svg>
+    </div>
+    <div class="ring-legend">
+      <span class="legend-item"><span class="legend-dot r1"></span> Ring 1 · 基础保证</span>
+      <span class="legend-item"><span class="legend-dot r2"></span> Ring 2 · 自适应</span>
+      <span class="legend-item"><span class="legend-dot r3"></span> Ring 3 · 管理平面</span>
+    </div>
+    <div class="ring-modules">
+      <div class="ring-module-row">
+        <span class="ring-module-dot r1"></span>
+        <span class="ring-module-name">Ring 1</span>
+        <span class="ring-module-tags">
+          <span class="module-tag r1">Core</span>
+          <span class="module-tag r1">Audit</span>
+          <span class="module-tag r1">Guard</span>
+          <span class="module-tag r1">Status</span>
+        </span>
+      </div>
+      <div class="ring-module-row">
+        <span class="ring-module-dot r2"></span>
+        <span class="ring-module-name">Ring 2</span>
+        <span class="ring-module-tags">
+          <span class="module-tag r2">Heal</span>
+          <span class="module-tag r2">Adapt</span>
+          <span class="module-tag r2">Cap</span>
+          <span class="module-tag r2">Drain</span>
+          <span class="module-tag r2">Lock</span>
+        </span>
+      </div>
+      <div class="ring-module-row">
+        <span class="ring-module-dot r3"></span>
+        <span class="ring-module-name">Ring 3</span>
+        <span class="ring-module-tags">
+          <span class="module-tag r3">Studio</span>
+          <span class="module-tag r3">Enterprise</span>
+          <span class="module-tag r3">RBAC</span>
+          <span class="module-tag r3">API</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Row 2: Agent Quota Dashboard ── -->
+  <div class="card quota-card">
+    <div class="card-header">
+      <div>
+        <div class="card-label">Agent Quota</div>
+        <div class="card-title">Token 配额仪表盘</div>
+      </div>
+      <span class="card-subtitle mono">今日 / 上限</span>
+    </div>
+    <div class="agent-quota-list" id="agentQuotaList">
+      <!-- JS populated -->
+    </div>
+  </div>
+
+  <!-- ── Row 2: Pipeline Funnel ── -->
+  <div class="card funnel-card">
+    <div class="card-header">
+      <div>
+        <div class="card-label">Pipeline</div>
+        <div class="card-title">转化漏斗</div>
+      </div>
+      <span class="card-subtitle mono" id="funnelPeriod">近 30 天</span>
+    </div>
+    <div class="funnel" id="funnel">
+      <!-- JS populated -->
+    </div>
+  </div>
+
+  <!-- ── Row 3: Audit Trail (full width) ── -->
+  <div class="card audit-card">
+    <div class="card-header">
+      <div>
+        <div class="card-label">Audit Trail</div>
+        <div class="card-title">审计轨迹 · 实时流</div>
+      </div>
+      <div class="audit-live-indicator">
+        <span class="audit-live-dot"></span>
+        <span>LIVE</span>
+      </div>
+    </div>
+    <div class="audit-table-wrap" id="auditTableWrap">
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>时间戳</th>
+            <th>Agent ID</th>
+            <th>操作</th>
+            <th>目标</th>
+            <th>Token 消耗</th>
+            <th>Token 预算</th>
+            <th>配额剩余</th>
+            <th>状态</th>
+            <th>Ring</th>
+            <th>上下文版本</th>
+            <th>锁持有者</th>
+            <th>审计哈希</th>
+          </tr>
+        </thead>
+        <tbody id="auditBody">
+          <!-- JS populated -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- .dashboard -->
+</div><!-- .app -->
+
+<script>
+/* ═══════════════════════════════════════════════
+   DATA & SIMULATION ENGINE
+   ═══════════════════════════════════════════════ */
+
+// ── Clock ──
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleString('zh-CN', { hour12: false });
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ── Agent Quota Data ──
+const agents = [
+  { id: 'coordinator', name: '总指挥',   maxTokens: 200000, icon: 'C' },
+  { id: 'zhihui-core', name: '智评核心', maxTokens: 150000, icon: 'Z' },
+  { id: 'seo-writer',  name: 'SEO 写手',  maxTokens: 120000, icon: 'S' },
+  { id: 'reviewer',    name: '审核员',    maxTokens: 80000,  icon: 'R' },
+  { id: 'analyst',     name: '分析师',    maxTokens: 100000, icon: 'A' },
+  { id: 'backup',      name: '热备 Agent', maxTokens: 60000,  icon: 'B' },
+];
+
+function randomUsed(max) {
+  return Math.floor(Math.random() * max * 0.7 + max * 0.1);
+}
+
+function renderAgentQuotas() {
+  const container = document.getElementById('agentQuotaList');
+  container.innerHTML = agents.map((a, i) => {
+    const used = randomUsed(a.maxTokens);
+    const pct = (used / a.maxTokens * 100);
+    let cls = 'low';
+    if (pct > 80) cls = 'high';
+    else if (pct > 60) cls = 'mid';
+    const status = pct > 80 ? '⚠ 接近上限' : pct > 60 ? '● 正常' : '● 充裕';
+    return `
+      <div class="agent-quota-item">
+        <div class="agent-quota-header">
+          <span class="agent-name">${a.icon} ${a.name}</span>
+          <span class="agent-tokens">
+            <span class="used">${used.toLocaleString()}</span>
+            <span class="text-muted"> / ${a.maxTokens.toLocaleString()}</span>
+          </span>
+        </div>
+        <div class="quota-bar-wrap">
+          <div class="quota-bar-fill ${cls}" style="width:${pct}%"></div>
+        </div>
+        <div class="agent-meta">
+          <span>${status}</span>
+          <span>${pct.toFixed(1)}%</span>
+          <span>ID: ${a.id}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Pipeline Funnel Data ──
+const funnelData = [
+  { stage: '搜索到项目', count: 2847, pct: '100%', conv: '—' },
+  { stage: '有效线索',   count: 1196, pct: '42%',  conv: '42.0%' },
+  { stage: '提案发出',   count: 512,  pct: '18%',  conv: '42.8%' },
+  { stage: '成交',       count: 171,  pct: '6%',   conv: '33.4%' },
+];
+
+function renderFunnel() {
+  const container = document.getElementById('funnel');
+  container.innerHTML = funnelData.map((f, i) => {
+    const barWidth = [100, 42, 18, 6][i];
+    return `
+      <div class="funnel-stage">
+        <span class="funnel-label">${f.stage}</span>
+        <div class="funnel-bar-wrap">
+          <div class="funnel-bar-fill" style="width:${barWidth}%">
+            ${i === 0 ? f.count.toLocaleString() : ''}
+          </div>
+        </div>
+        <span class="funnel-count">${f.count.toLocaleString()}</span>
+        <span class="funnel-pct">${f.pct}</span>
+        <span class="funnel-conv">${f.conv}</span>
+      </div>`;
+  }).join('');
+}
+
+// ── Audit Trail Generator ──
+const actions = [
+  'token_check', 'context_alloc', 'tool_invoke', 'context_reclaim',
+  'guard_check', 'heal_trigger', 'state_write', 'quota_enforce',
+  'audit_commit', 'context_compress', 'lock_acquire', 'lock_release',
+];
+const targets = [
+  'gpt-4o', 'claude-sonnet-4', 'gemini-pro', 'deepseek-v3',
+  'memory_store', 'tool_registry', 'quota_manager', 'audit_log',
+];
+const rings = ['R1', 'R1', 'R1', 'R2', 'R2', 'R3'];
+const statuses = ['ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'warn', 'err'];
+
+function randomAuditEntry(id) {
+  const now = new Date(Date.now() - Math.random() * 3600000);
+  const ts = now.toISOString().replace('T', ' ').slice(0, 19);
+  const agent = agents[Math.floor(Math.random() * agents.length)];
+  const action = actions[Math.floor(Math.random() * actions.length)];
+  const target = targets[Math.floor(Math.random() * targets.length)];
+  const tokens = Math.floor(Math.random() * 8000 + 200);
+  const budget = agent.maxTokens;
+  const remaining = Math.floor(Math.random() * budget * 0.5 + budget * 0.2);
+  const status = statuses[Math.floor(Math.random() * statuses.length)];
+  const ring = rings[Math.floor(Math.random() * rings.length)];
+  const ctxVer = 'v' + Math.floor(Math.random() * 50 + 1);
+  const lockHolder = Math.random() > 0.7 ? agent.id : '—';
+  const hash = Array.from({length: 8}, () =>
+    '0123456789abcdef'[Math.floor(Math.random() * 16)]
+  ).join('');
+
+  const statusCls = status === 'err' ? 'err' : status === 'warn' ? 'warn' : 'ok';
+  return { id, ts, agentId: agent.id, action, target, tokens, budget, remaining,
+           status, ring, ctxVer, lockHolder, hash, statusCls };
+}
+
+let auditEntries = [];
+const MAX_AUDIT = 50;
+
+function initAuditTrail() {
+  auditEntries = [];
+  for (let i = 0; i < 30; i++) {
+    auditEntries.push(randomAuditEntry(i));
+  }
+  auditEntries.sort((a, b) => b.ts.localeCompare(a.ts));
+  renderAuditTable();
+}
+
+function renderAuditTable() {
+  const tbody = document.getElementById('auditBody');
+  tbody.innerHTML = auditEntries.slice(0, MAX_AUDIT).map(e => `
+    <tr data-id="${e.id}">
+      <td class="audit-cell-time mono">${e.ts}</td>
+      <td class="audit-cell-agent mono">${e.agentId}</td>
+      <td class="audit-cell-action">${e.action}</td>
+      <td class="mono">${e.target}</td>
+      <td class="audit-cell-tokens mono">${e.tokens.toLocaleString()}</td>
+      <td class="mono text-muted">${e.budget.toLocaleString()}</td>
+      <td class="mono">${e.remaining.toLocaleString()}</td>
+      <td class="audit-cell-status-${e.statusCls}">${e.status.toUpperCase()}</td>
+      <td class="mono">${e.ring}</td>
+      <td class="mono text-muted">${e.ctxVer}</td>
+      <td class="mono text-muted">${e.lockHolder}</td>
+      <td class="mono text-muted" style="font-size:9px">${e.hash}</td>
+    </tr>`).join('');
+}
+
+function insertAuditEntry() {
+  const newEntry = randomAuditEntry(Date.now());
+  newEntry.ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
+  auditEntries.unshift(newEntry);
+  if (auditEntries.length > MAX_AUDIT + 10) {
+    auditEntries = auditEntries.slice(0, MAX_AUDIT + 10);
+  }
+  renderAuditTable();
+
+  // Flash the new row
+  const firstRow = document.querySelector('#auditBody tr[data-id="' + newEntry.id + '"]');
+  if (firstRow) firstRow.classList.add('new-row');
+}
+
+// ── Stability Metrics Sim ──
+function updateMetrics() {
+  const failRate = (Math.random() * 4 + 0.5).toFixed(1);
+  const ctxLoss = (Math.random() * 0.8).toFixed(1);
+  const conflict = 0;
+  const stuck = (Math.random() * 8 + 0.5).toFixed(1);
+
+  document.getElementById('valFailRate').innerHTML = failRate + '<span style="font-size:16px;color:var(--fg-muted)">%</span>';
+  document.getElementById('valCtxLoss').innerHTML = ctxLoss + '<span style="font-size:16px;color:var(--fg-muted)">&permil;</span>';
+  document.getElementById('valConflict').textContent = conflict;
+  document.getElementById('valStuck').innerHTML = stuck + '<span style="font-size:16px;color:var(--fg-muted)">min</span>';
+
+  document.getElementById('barFailRate').style.width = (parseFloat(failRate) / 5 * 100) + '%';
+  document.getElementById('barCtxLoss').style.width = (parseFloat(ctxLoss) / 1 * 100) + '%';
+  document.getElementById('barConflict').style.width = '0%';
+  document.getElementById('barStuck').style.width = (parseFloat(stuck) / 10 * 100) + '%';
+
+  // Update badges
+  const badges = [
+    { id: 'badgeFailRate', val: parseFloat(failRate), threshold: 5 },
+    { id: 'badgeCtxLoss', val: parseFloat(ctxLoss), threshold: 1 },
+    { id: 'badgeConflict', val: conflict, threshold: 0.1 },
+    { id: 'badgeStuck', val: parseFloat(stuck), threshold: 10 },
+  ];
+
+  badges.forEach(b => {
+    const el = document.getElementById(b.id);
+    if (b.val >= b.threshold) {
+      el.textContent = 'FAIL';
+      el.className = 'metric-badge fail';
+    } else if (b.val >= b.threshold * 0.7) {
+      el.textContent = 'WARN';
+      el.className = 'metric-badge warn';
+    } else {
+      el.textContent = 'PASS';
+      el.className = 'metric-badge pass';
+    }
+  });
+
+  // Status dot
+  const dot = document.getElementById('statusDot');
+  const statusText = document.getElementById('statusText');
+  if (parseFloat(failRate) >= 5) {
+    dot.className = 'status-dot danger';
+    statusText.textContent = '异常: 失败率超标';
+  } else if (parseFloat(failRate) >= 3.5) {
+    dot.className = 'status-dot warn';
+    statusText.textContent = '警告: 部分指标偏高';
+  } else {
+    dot.className = 'status-dot';
+    statusText.textContent = '全部系统在线';
+  }
+}
+
+// ── Initialization ──
+function init() {
+  renderAgentQuotas();
+  renderFunnel();
+  initAuditTrail();
+  updateMetrics();
+
+  // Periodic refresh
+  setInterval(() => {
+    renderAgentQuotas();
+    renderFunnel();
+    updateMetrics();
+  }, 10000);
+
+  // Audit stream: insert new entry every 3-7 seconds
+  setInterval(() => {
+    insertAuditEntry();
+  }, 3000 + Math.random() * 4000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
